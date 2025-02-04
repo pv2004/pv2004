@@ -28,3 +28,8 @@
   />
   <img src="https://github-readme-stats.vercel.app/api?username=pv2004&show_icons=true" />
 </picture>
+
+
+<img align="center" src="https://github-readme-stats.vercel.app/api/top-langs?username=pv2004&amp;show_icons=true&amp;locale=en&amp;bg_color=0d1117&amp;text_color=ffffff&amp;layout=compact" alt="pv2004" bg_color="#808080/"></p>
+<br>
+
