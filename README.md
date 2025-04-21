@@ -1,7 +1,7 @@
 <h1 align="center">Hi 👋, I'm Vineeth</h1>
 <h3 align="center">A passionate developer from India</h3>
 
-- 🌱 I’m currently learning **DataScience, Machine Learning**
+- 🌱 I’m currently learning **DataScience, Machine Learning!**
 
 - 📫 How to reach me **harivineeth51@gmail.com**
 
