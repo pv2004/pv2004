@@ -110,6 +110,7 @@ def render(data):
         f'<linearGradient id="hbg" x1="0" y1="0" x2="0" y2="1">'
         f'<stop offset="0" stop-color="{BG2}"/><stop offset="1" stop-color="{BG}"/></linearGradient>'
         '</defs>',
+        '<style>.gh-logo{cursor:pointer}.gh-logo:hover path{fill:' + GREEN + '}</style>',
         f'<rect width="{canvas_w}" height="{canvas_h}" rx="12" fill="url(#hbg)"/>',
         f'<rect x="0.5" y="0.5" width="{canvas_w-1}" height="{canvas_h-1}" rx="12" '
         f'fill="none" stroke="{FRAME}" stroke-width="1" stroke-opacity="0.55"/>',
@@ -117,6 +118,27 @@ def render(data):
     ]
     for i, dotcol in enumerate(["#ff5f56", "#ffbd2e", "#27c93f"]):
         parts.append(f'<circle cx="{PAD + i*16}" cy="{TITLEBAR_H/2}" r="5" fill="{dotcol}"/>')
+
+    gh_logo_x = PAD + 60
+    gh_logo_y = TITLEBAR_H / 2
+    gh_logo_s = 0.055
+    gh_logo_href = "https://github.com/pv2004/pv2004/actions/workflows/update-profile-art.yml"
+    parts.append(
+        f'<a href="{gh_logo_href}" target="_blank">'
+        f'<title>Click to refresh contributions</title>'
+        f'<g class="gh-logo" transform="translate({gh_logo_x - 8},{gh_logo_y - 8}) scale({gh_logo_s})">'
+        f'<path fill="{TEXT}" d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 '
+        f'11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61'
+        f'C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 '
+        f'1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665'
+        f'-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176'
+        f' 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552'
+        f' 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61'
+        f'-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315'
+        f'.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/>'
+        f'</g></a>'
+    )
+
     parts.append(f'<text x="{canvas_w/2}" y="{TITLEBAR_H/2 + 4}" fill="{MUTED}" font-size="12" '
                  f'text-anchor="middle">avi@github: ~/contributions --graph</text>')
 
