@@ -3,6 +3,10 @@
 
 <img src="./contrib-heatmap.svg" width="760" alt="GitHub contribution graph" />
 
+<a href="https://github.com/pv2004/pv2004/actions/workflows/update-profile-art.yml">
+  <img src="https://img.shields.io/badge/🔄_Refresh-0d1117?style=for-the-badge&logo=githubactions&logoColor=white&labelColor=238636&color=238636" alt="Refresh Heatmap" />
+</a>
+
 <br>
 <!-- behdbverbvb -->
 <br>
