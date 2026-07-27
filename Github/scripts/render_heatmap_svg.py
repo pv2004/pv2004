@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Render data/contributions.json (produced by fetch_contributions.py) as a
-GitHub-style contribution heatmap SVG with a clickable refresh button.
+GitHub-style contribution heatmap SVG.
 
 Run by .github/workflows/update-profile-art.yml after fetch_contributions.py.
 """
@@ -35,8 +35,6 @@ GOLD = "#f2cc60"
 COL_T = 0.018
 ROW_T = 0.045
 CELL_DUR = 0.42
-
-REFRESH_URL = "https://github.com/pv2004/pv2004/actions/workflows/update-profile-art.yml"
 
 
 def level_for(count):
@@ -72,34 +70,6 @@ def build_grid(days):
             col.append(None)
         grid.append(col)
     return grid
-
-
-def render_refresh_button(cx, cy, r):
-    """Return SVG group for a circular refresh icon wrapped in a clickable <a>."""
-    s = r / 12
-    ox = cx - 12 * s
-    oy = cy - 12 * s
-
-    arc_path = (
-        "M12 4.5A7.5 7.5 0 0 0 4.5 12"
-        "M12 19.5A7.5 7.5 0 0 0 19.5 12"
-    )
-    arrow1 = "M1.5 4.5L4.5 1.5L7.5 4.5"
-    arrow2 = "M16.5 19.5L19.5 22.5L22.5 19.5"
-
-    parts = [
-        f'<a href="{REFRESH_URL}" target="_blank">',
-        f'<title>Click to refresh contributions</title>',
-        f'<circle cx="{cx}" cy="{cy}" r="{r}" fill="{FRAME}" opacity="0.2"/>',
-        f'<circle cx="{cx}" cy="{cy}" r="{r}" fill="none" stroke="{FRAME}" stroke-width="1" stroke-opacity="0.4"/>',
-        f'<g transform="translate({ox:.1f},{oy:.1f}) scale({s:.3f})" '
-        f'stroke="{TEXT}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none">',
-        f'<path d="{arc_path}"/>',
-        f'<polyline points="{arrow1}"/>',
-        f'<polyline points="{arrow2}"/>',
-        f'</g></a>',
-    ]
-    return "".join(parts)
 
 
 def render(data):
@@ -141,16 +111,9 @@ def render(data):
         f'stroke="{FRAME}" stroke-opacity="0.35"/>',
     ]
 
-    # traffic-light dots
     for i, dotcol in enumerate(["#ff5f56", "#ffbd2e", "#27c93f"]):
         parts.append(f'<circle cx="{PAD + i*16}" cy="{TITLEBAR_H/2}" r="5" fill="{dotcol}"/>')
 
-    # refresh button — right side of the title bar
-    refresh_cx = canvas_w - PAD - 14
-    refresh_cy = TITLEBAR_H / 2
-    parts.append(render_refresh_button(refresh_cx, refresh_cy, 11))
-
-    # title text
     parts.append(
         f'<text x="{canvas_w/2}" y="{TITLEBAR_H/2 + 4}" fill="{MUTED}" font-size="12" '
         f'text-anchor="middle">avi@github: ~/contributions --graph</text>'
@@ -159,19 +122,16 @@ def render(data):
     grid_top = TITLEBAR_H + TOP_LABEL_H
     grid_left = PAD + LEFT_LABEL_W
 
-    # month labels
     for ci, label in month_labels:
         x = grid_left + ci * STEP
         parts.append(
             f'<text x="{x}" y="{TITLEBAR_H + 14}" fill="{MUTED}" font-size="10">{label}</text>'
         )
 
-    # weekday labels
     for wi, wname in [(1, "Mon"), (3, "Wed"), (5, "Fri")]:
         y = grid_top + wi * STEP + CELL * 0.78
         parts.append(f'<text x="{PAD}" y="{y:.1f}" fill="{MUTED}" font-size="9">{wname}</text>')
 
-    # heatmap cells with reveal animation
     for ci, column in enumerate(grid):
         gx = grid_left + ci * STEP
         for ri, cell in enumerate(column):
@@ -189,7 +149,6 @@ def render(data):
                 f'<title>{date_s}: {count} contribution{plural}</title></rect>'
             )
 
-    # legend
     leg_y = grid_top + art_h + 6
     leg_x = canvas_w - PAD - (len(PALETTE) * (CELL - 1) + 70)
     parts.append(
@@ -206,14 +165,12 @@ def render(data):
         f'<text x="{lx + 4}" y="{leg_y + CELL*0.8:.1f}" fill="{MUTED}" font-size="10">More</text>'
     )
 
-    # separator
     sep_y = leg_y + CELL + 14
     parts.append(
         f'<line x1="0" y1="{sep_y}" x2="{canvas_w}" y2="{sep_y}" '
         f'stroke="{FRAME}" stroke-opacity="0.25"/>'
     )
 
-    # stats footer
     cs = data["current_streak"]["length"]
     ls = data["longest_streak"]["length"]
     total = data["total_contributions"]
