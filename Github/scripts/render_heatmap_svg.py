@@ -1,10 +1,7 @@
 #!/usr/bin/env python3
 """
-Render data/contributions.json (produced by fetch_contributions.py) as a proper
-GitHub-style contribution heatmap SVG: a grid of rounded, colored BOXES in the
-classic 53-week x 7-day calendar, revealed once with a diagonal line-after-line
-slide-down (CSS keyframes, plays on load then freezes -- no looping "glow"), a
-Less->More legend, and a real stats footer.
+Render data/contributions.json (produced by fetch_contributions.py) as a
+GitHub-style contribution heatmap SVG with a clickable refresh button.
 
 Run by .github/workflows/update-profile-art.yml after fetch_contributions.py.
 """
@@ -16,7 +13,6 @@ HERE = os.path.dirname(__file__)
 IN_PATH = os.path.join(HERE, "..", "data", "contributions.json")
 OUT_PATH = os.path.join(HERE, "..", "contrib-heatmap.svg")
 
-# GitHub-ish green ramp: empty -> brightest. Level 5 is a brighter neon top end.
 PALETTE = ["#161b22", "#0e4429", "#006d32", "#26a641", "#39d353", "#69f0a0"]
 
 CELL = 12
@@ -36,10 +32,11 @@ ACCENT = "#22d3ee"
 GREEN = "#39d353"
 GOLD = "#f2cc60"
 
-# reveal timing (one-shot)
-COL_T = 0.018   # per-column delay contribution (left -> right sweep)
-ROW_T = 0.045   # per-row delay contribution (top -> bottom cascade)
+COL_T = 0.018
+ROW_T = 0.045
 CELL_DUR = 0.42
+
+REFRESH_URL = "https://github.com/pv2004/pv2004/actions/workflows/update-profile-art.yml"
 
 
 def level_for(count):
@@ -58,7 +55,7 @@ def level_for(count):
 
 def build_grid(days):
     first = datetime.date.fromisoformat(days[0]["date"])
-    lead_pad = (first.weekday() + 1) % 7  # sunday=0
+    lead_pad = (first.weekday() + 1) % 7
     grid = []
     col = [None] * lead_pad
     for d in days:
@@ -75,6 +72,34 @@ def build_grid(days):
             col.append(None)
         grid.append(col)
     return grid
+
+
+def render_refresh_button(cx, cy, r):
+    """Return SVG group for a circular refresh icon wrapped in a clickable <a>."""
+    s = r / 12
+    ox = cx - 12 * s
+    oy = cy - 12 * s
+
+    arc_path = (
+        "M12 4.5A7.5 7.5 0 0 0 4.5 12"
+        "M12 19.5A7.5 7.5 0 0 0 19.5 12"
+    )
+    arrow1 = "M1.5 4.5L4.5 1.5L7.5 4.5"
+    arrow2 = "M16.5 19.5L19.5 22.5L22.5 19.5"
+
+    parts = [
+        f'<a href="{REFRESH_URL}" target="_blank">',
+        f'<title>Click to refresh contributions</title>',
+        f'<circle cx="{cx}" cy="{cy}" r="{r}" fill="{FRAME}" opacity="0.2"/>',
+        f'<circle cx="{cx}" cy="{cy}" r="{r}" fill="none" stroke="{FRAME}" stroke-width="1" stroke-opacity="0.4"/>',
+        f'<g transform="translate({ox:.1f},{oy:.1f}) scale({s:.3f})" '
+        f'stroke="{TEXT}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none">',
+        f'<path d="{arc_path}"/>',
+        f'<polyline points="{arrow1}"/>',
+        f'<polyline points="{arrow2}"/>',
+        f'</g></a>',
+    ]
+    return "".join(parts)
 
 
 def render(data):
@@ -101,59 +126,52 @@ def render(data):
     stats_h = 88
     canvas_h = TITLEBAR_H + TOP_LABEL_H + art_h + stats_h + PAD
 
-    css = ""  # no CSS; we use SMIL which GitHub does not strip
-
     parts = [
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{canvas_w}" height="{canvas_h}" '
-        f'viewBox="0 0 {canvas_w} {canvas_h}" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">',
+        f'viewBox="0 0 {canvas_w} {canvas_h}" '
+        f'font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">',
         '<defs>'
         f'<linearGradient id="hbg" x1="0" y1="0" x2="0" y2="1">'
         f'<stop offset="0" stop-color="{BG2}"/><stop offset="1" stop-color="{BG}"/></linearGradient>'
         '</defs>',
-        '<style>.gh-logo{cursor:pointer}.gh-logo:hover path{fill:' + GREEN + '}</style>',
         f'<rect width="{canvas_w}" height="{canvas_h}" rx="12" fill="url(#hbg)"/>',
         f'<rect x="0.5" y="0.5" width="{canvas_w-1}" height="{canvas_h-1}" rx="12" '
         f'fill="none" stroke="{FRAME}" stroke-width="1" stroke-opacity="0.55"/>',
-        f'<line x1="0" y1="{TITLEBAR_H}" x2="{canvas_w}" y2="{TITLEBAR_H}" stroke="{FRAME}" stroke-opacity="0.35"/>',
+        f'<line x1="0" y1="{TITLEBAR_H}" x2="{canvas_w}" y2="{TITLEBAR_H}" '
+        f'stroke="{FRAME}" stroke-opacity="0.35"/>',
     ]
+
+    # traffic-light dots
     for i, dotcol in enumerate(["#ff5f56", "#ffbd2e", "#27c93f"]):
         parts.append(f'<circle cx="{PAD + i*16}" cy="{TITLEBAR_H/2}" r="5" fill="{dotcol}"/>')
 
-    gh_logo_x = PAD + 60
-    gh_logo_y = TITLEBAR_H / 2
-    gh_logo_s = 0.055
-    gh_logo_href = "https://github.com/pv2004/pv2004/actions/workflows/update-profile-art.yml"
-    parts.append(
-        f'<a href="{gh_logo_href}" target="_blank">'
-        f'<title>Click to refresh contributions</title>'
-        f'<g class="gh-logo" transform="translate({gh_logo_x - 8},{gh_logo_y - 8}) scale({gh_logo_s})">'
-        f'<path fill="{TEXT}" d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 '
-        f'11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61'
-        f'C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 '
-        f'1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665'
-        f'-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176'
-        f' 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552'
-        f' 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61'
-        f'-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315'
-        f'.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/>'
-        f'</g></a>'
-    )
+    # refresh button — right side of the title bar
+    refresh_cx = canvas_w - PAD - 14
+    refresh_cy = TITLEBAR_H / 2
+    parts.append(render_refresh_button(refresh_cx, refresh_cy, 11))
 
-    parts.append(f'<text x="{canvas_w/2}" y="{TITLEBAR_H/2 + 4}" fill="{MUTED}" font-size="12" '
-                 f'text-anchor="middle">avi@github: ~/contributions --graph</text>')
+    # title text
+    parts.append(
+        f'<text x="{canvas_w/2}" y="{TITLEBAR_H/2 + 4}" fill="{MUTED}" font-size="12" '
+        f'text-anchor="middle">avi@github: ~/contributions --graph</text>'
+    )
 
     grid_top = TITLEBAR_H + TOP_LABEL_H
     grid_left = PAD + LEFT_LABEL_W
 
+    # month labels
     for ci, label in month_labels:
         x = grid_left + ci * STEP
-        parts.append(f'<text x="{x}" y="{TITLEBAR_H + 14}" fill="{MUTED}" font-size="10">{label}</text>')
+        parts.append(
+            f'<text x="{x}" y="{TITLEBAR_H + 14}" fill="{MUTED}" font-size="10">{label}</text>'
+        )
 
+    # weekday labels
     for wi, wname in [(1, "Mon"), (3, "Wed"), (5, "Fri")]:
         y = grid_top + wi * STEP + CELL * 0.78
         parts.append(f'<text x="{PAD}" y="{y:.1f}" fill="{MUTED}" font-size="9">{wname}</text>')
 
-    # the boxes -- each a rounded rect, diagonal slide-down reveal (once, freeze)
+    # heatmap cells with reveal animation
     for ci, column in enumerate(grid):
         gx = grid_left + ci * STEP
         for ri, cell in enumerate(column):
@@ -171,19 +189,31 @@ def render(data):
                 f'<title>{date_s}: {count} contribution{plural}</title></rect>'
             )
 
-    # legend: Less [][][][][] More (bottom-right of the grid)
+    # legend
     leg_y = grid_top + art_h + 6
     leg_x = canvas_w - PAD - (len(PALETTE) * (CELL - 1) + 70)
-    parts.append(f'<text x="{leg_x}" y="{leg_y + CELL*0.8:.1f}" fill="{MUTED}" font-size="10" text-anchor="end">Less</text>')
+    parts.append(
+        f'<text x="{leg_x}" y="{leg_y + CELL*0.8:.1f}" fill="{MUTED}" font-size="10" '
+        f'text-anchor="end">Less</text>'
+    )
     lx = leg_x + 8
     for lvl, color in enumerate(PALETTE):
-        parts.append(f'<rect x="{lx}" y="{leg_y}" width="{CELL-1}" height="{CELL-1}" rx="2.2" fill="{color}"/>')
+        parts.append(
+            f'<rect x="{lx}" y="{leg_y}" width="{CELL-1}" height="{CELL-1}" rx="2.2" fill="{color}"/>'
+        )
         lx += CELL
-    parts.append(f'<text x="{lx + 4}" y="{leg_y + CELL*0.8:.1f}" fill="{MUTED}" font-size="10">More</text>')
+    parts.append(
+        f'<text x="{lx + 4}" y="{leg_y + CELL*0.8:.1f}" fill="{MUTED}" font-size="10">More</text>'
+    )
 
+    # separator
     sep_y = leg_y + CELL + 14
-    parts.append(f'<line x1="0" y1="{sep_y}" x2="{canvas_w}" y2="{sep_y}" stroke="{FRAME}" stroke-opacity="0.25"/>')
+    parts.append(
+        f'<line x1="0" y1="{sep_y}" x2="{canvas_w}" y2="{sep_y}" '
+        f'stroke="{FRAME}" stroke-opacity="0.25"/>'
+    )
 
+    # stats footer
     cs = data["current_streak"]["length"]
     ls = data["longest_streak"]["length"]
     total = data["total_contributions"]
@@ -191,19 +221,26 @@ def render(data):
     rng = data["range"]
 
     ly = sep_y + 24
-    # left column: big highlighted numbers; right column: context in muted
-    parts.append(f'<text x="{PAD}" y="{ly}" font-size="13" fill="{GREEN}">'
-                 f'<tspan font-weight="700">{total:,}</tspan>'
-                 f'<tspan fill="{MUTED}"> contributions in the last year</tspan></text>')
-    parts.append(f'<text x="{canvas_w - PAD}" y="{ly}" font-size="12" fill="{MUTED}" text-anchor="end">'
-                 f'{rng["start"]} &#8594; {rng["end"]}</text>')
+    parts.append(
+        f'<text x="{PAD}" y="{ly}" font-size="13" fill="{GREEN}">'
+        f'<tspan font-weight="700">{total:,}</tspan>'
+        f'<tspan fill="{MUTED}"> contributions in the last year</tspan></text>'
+    )
+    parts.append(
+        f'<text x="{canvas_w - PAD}" y="{ly}" font-size="12" fill="{MUTED}" text-anchor="end">'
+        f'{rng["start"]} &#8594; {rng["end"]}</text>'
+    )
     ly += 24
-    parts.append(f'<text x="{PAD}" y="{ly}" font-size="13" fill="{MUTED}">current streak '
-                 f'<tspan fill="{ACCENT}" font-weight="700">{cs} days</tspan>'
-                 f'<tspan fill="{MUTED}">   &#183;   longest </tspan>'
-                 f'<tspan fill="{ACCENT}" font-weight="700">{ls} days</tspan></text>')
-    parts.append(f'<text x="{canvas_w - PAD}" y="{ly}" font-size="12" fill="{MUTED}" text-anchor="end">'
-                 f'best day <tspan fill="{GOLD}" font-weight="700">{best["count"]}</tspan> on {best["date"]}</text>')
+    parts.append(
+        f'<text x="{PAD}" y="{ly}" font-size="13" fill="{MUTED}">current streak '
+        f'<tspan fill="{ACCENT}" font-weight="700">{cs} days</tspan>'
+        f'<tspan fill="{MUTED}">   &#183;   longest </tspan>'
+        f'<tspan fill="{ACCENT}" font-weight="700">{ls} days</tspan></text>'
+    )
+    parts.append(
+        f'<text x="{canvas_w - PAD}" y="{ly}" font-size="12" fill="{MUTED}" text-anchor="end">'
+        f'best day <tspan fill="{GOLD}" font-weight="700">{best["count"]}</tspan> on {best["date"]}</text>'
+    )
 
     parts.append("</svg>")
     return "".join(parts)
