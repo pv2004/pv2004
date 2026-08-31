@@ -1,17 +1,17 @@
 {
   "username": "pv2004",
-  "generated_at": "2026-08-30T20:36:13Z",
+  "generated_at": "2026-08-31T03:47:18Z",
   "range": {
     "start": "2025-08-31",
-    "end": "2026-08-30"
+    "end": "2026-08-31"
   },
   "total_contributions": 60,
   "active_days": 25,
   "avg_per_active_day": 2.4,
   "current_streak": {
-    "length": 4,
-    "start": "2026-08-26",
-    "end": "2026-08-29"
+    "length": 0,
+    "start": null,
+    "end": null
   },
   "longest_streak": {
     "length": 6,
@@ -1535,6 +1535,10 @@
     },
     {
       "date": "2026-08-30",
+      "count": 0
+    },
+    {
+      "date": "2026-08-31",
       "count": 0
     }
   ]
